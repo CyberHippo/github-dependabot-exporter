@@ -1,0 +1,32 @@
+replicaCount: 2
+
+image:
+  repository: dependabot-prometheus-exporter
+  tag: latest
+  pullPolicy: IfNotPresent
+
+service:
+  type: ClusterIP
+  port: 8080
+
+env: {}
+  # GITHUB_ORG: "my-org"
+  # GITHUB_AUTH_MODE: "token"
+  # GITHUB_TOKEN: "<your-token>"
+
+resources: {}
+
+nodeSelector: {}
+
+tolerations: []
+
+affinity: {}
+
+# For mounting extra secrets/configs (e.g. GitHub App private key)
+extraVolumeMounts: []
+extraVolumes: []
+
+serviceMonitor:
+  enabled: false
+  interval: 30s
+  scrapeTimeout: 10s

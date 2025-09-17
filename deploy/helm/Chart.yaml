@@ -1,0 +1,6 @@
+apiVersion: v2
+name: dependabot-prometheus-exporter
+description: GitHub Dependabot Alerts Prometheus Exporter
+type: application
+version: 1.0.0
+appVersion: "latest"
