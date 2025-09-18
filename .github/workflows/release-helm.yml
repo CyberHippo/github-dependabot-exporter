@@ -2,11 +2,8 @@ name: Publish Helm Chart to GitHub Pages
 
 on:
   push:
-    branches:
-      - main
-    paths:
-      - 'deploy/helm/**'
-      - '.github/workflows/publish-helm-chart.yml'
+    tags:
+      - 'helm-v*.*.*'
 
 permissions:
   contents: write
