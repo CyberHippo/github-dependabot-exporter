@@ -24,7 +24,13 @@ affinity: {}
 
 # For mounting extra secrets/configs (e.g. GitHub App private key)
 extraVolumeMounts: []
+  # - name: github-app-key
+  #   mountPath: /etc/github-app
+  #   readOnly: true
 extraVolumes: []
+  # - name: github-app-key
+  #   secret:
+  #     secretName: github-app-private-key
 
 serviceMonitor:
   enabled: false
