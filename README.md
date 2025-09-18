@@ -28,7 +28,7 @@ github_dependabot_alerts{repo="repo-name",severity="high",state="open"} 4
 ### 1. Build
 
 ```sh
-go build -o dependabot-prometheus-exporter
+go build -o github-dependabot-exporter
 ```
 
 ### 2. Configure
@@ -55,7 +55,7 @@ Set the following environment variables:
 ### 3. Run
 
 ```sh
-./dependabot-prometheus-exporter
+./github-dependabot-exporter
 ```
 
 Metrics will be available at:  
@@ -65,9 +65,9 @@ Metrics will be available at:
 
 ```yaml
 scrape_configs:
-  - job_name: 'dependabot-prometheus-exporter'
+  - job_name: 'github-dependabot-exporter'
     static_configs:
-      - targets: ['localhost:9090']
+      - targets: ['localhost:8080']
 ```
 
 ---
