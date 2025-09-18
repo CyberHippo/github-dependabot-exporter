@@ -1,0 +1,18 @@
+suite: Test deployment rendering
+templates:
+  - deployment.yaml
+tests:
+  - it: should set image tag
+    set:
+      image.tag: "mytag"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].image
+          value: "ghcr.io/cyberhippo/github-dependabot-exporter:mytag"
+  - it: should set environment variable
+    set:
+      env.GITHUB_ORG: "acme"
+    asserts:
+      - equal:
+          path: spec.template.spec.containers[0].env[?(@.name=="GITHUB_ORG")].value
+          value: "acme"
