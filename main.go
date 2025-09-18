@@ -227,7 +227,7 @@ func main() {
 	}
 	log.SetLevel(level)
 
-  listenPort := getenv("LISTEN_PORT", "9090")
+  listenPort := getenv("LISTEN_PORT", "8080")
   org := getenv("GITHUB_ORG", "")
   authMode := getenv("GITHUB_AUTH_MODE", "")
 	schedule := getenv("CRON_SCHEDULE", "0 0 * * *")
