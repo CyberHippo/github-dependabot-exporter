@@ -1,0 +1,21 @@
+suite: Test deployment rendering
+templates:
+  - service.yaml
+tests:
+  - it: should set service type
+    set:
+      service.type: "foo"
+    asserts:
+      - equal:
+          path: spec.type
+          value: "foo"
+  - it: should set service port
+    set:
+      service.port: "1234"
+    asserts:
+      - equal:
+          path: spec.ports[0].port
+          value: 1234
+      - equal:
+          path: spec.ports[0].targetPort
+          value: 1234
