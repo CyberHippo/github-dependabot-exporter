@@ -2,7 +2,7 @@ replicaCount: 2
 
 image:
   repository: ghcr.io/cyberhippo/github-dependabot-exporter
-  tag: sha-f3a7a77a
+  tag: latest
   pullPolicy: IfNotPresent
 
 service:

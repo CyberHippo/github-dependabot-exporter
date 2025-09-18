@@ -6,7 +6,7 @@ This Helm chart deploys the [GitHub Dependabot Alerts Prometheus Exporter](https
 
 | Parameter                       | Description                                                    | Default                |
 |----------------------------------|----------------------------------------------------------------|------------------------|
-| `image.repository`               | Container image repository                                     | `github-dependabot-exporter` |
+| `image.repository`               | Container image repository                                     | `ghcr.io/cyberhippo/github-dependabot-exporter` |
 | `image.tag`                      | Image tag                                                      | `latest`               |
 | `image.pullPolicy`               | Image pull policy                                              | `IfNotPresent`         |
 | `replicaCount`                   | Number of replicas                                             | 1                      |
