@@ -37,7 +37,7 @@ jobs:
           CR_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           mkdir -p .cr-release-packages
-          helm package charts/github-dependabot-exporter --destination .cr-release-packages
+          helm package deploy/helm --destination .cr-release-packages
           cr upload -o ${{ github.repository_owner }} -r ${{ github.event.repository.name }} --package-path .cr-release-packages
           cr index -o ${{ github.repository_owner }} -r ${{ github.event.repository.name }} -c https://${{ github.repository_owner }}.github.io/${{ github.event.repository.name }}
 
