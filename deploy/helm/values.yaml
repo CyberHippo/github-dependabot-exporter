@@ -1,7 +1,7 @@
 replicaCount: 2
 
 image:
-  repository: dependabot-prometheus-exporter
+  repository: github-dependabot-exporter
   tag: latest
   pullPolicy: IfNotPresent
 
