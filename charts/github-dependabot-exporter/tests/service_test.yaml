@@ -1,4 +1,4 @@
-suite: Test deployment rendering
+suite: Test service rendering
 templates:
   - service.yaml
 tests:
