@@ -1,0 +1,32 @@
+name: Helm Chart Lint and Test
+
+on:
+  pull_request:
+    paths:
+      - 'charts/github-dependabot-exporter/**'
+  push:
+    branches:
+      - main
+    paths:
+      - 'charts/github-dependabot-exporter/**'
+
+jobs:
+  lint-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v5
+
+      - name: Set up Helm
+        uses: azure/setup-helm@v4
+
+      - name: Install helm-unittest plugin
+        run: helm plugin install https://github.com/helm-unittest/helm-unittest
+
+      - name: Run helm-unittest
+        run: |
+          helm unittest charts/github-dependabot-exporter
+
+      - name: Lint Helm Chart
+        run: |
+          helm lint charts/github-dependabot-exporter
