@@ -16,3 +16,11 @@ tests:
       - equal:
           path: spec.template.spec.containers[0].env[?(@.name=="GITHUB_ORG")].value
           value: "acme"
+  - it: should set pod annotations
+    set:
+      podAnnotations:
+          annotation/foo-bar: "foo-bar"
+    asserts:
+      - equal:
+          path: spec.template.metadata.annotations.annotation/foo-bar
+          value: foo-bar

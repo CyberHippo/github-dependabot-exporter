@@ -2,6 +2,7 @@ fullnameOverride: ""
 nameOverride: ""
 
 replicaCount: 2
+podAnnotations: {}
 
 image:
   repository: ghcr.io/cyberhippo/github-dependabot-exporter
