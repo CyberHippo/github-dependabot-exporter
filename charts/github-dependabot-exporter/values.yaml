@@ -6,7 +6,7 @@ podAnnotations: {}
 
 image:
   repository: ghcr.io/cyberhippo/github-dependabot-exporter
-  tag: latest
+  tag: 1.0.0
   pullPolicy: IfNotPresent
 
 service:

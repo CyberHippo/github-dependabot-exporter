@@ -56,8 +56,8 @@ If you use [Prometheus Operator](https://github.com/prometheus-operator/promethe
 ## Usage
 
 ```sh
-helm repo add my-charts https://your.repo/charts/
-helm install github-dependabot-exporter my-charts/github-dependabot-exporter
+helm repo add cyberhippo https://cyberhippo.github.io/github-dependabot-exporter/
+helm install github-dependabot-exporter cyberhippo/github-dependabot-exporter
 ```
 
 ---
