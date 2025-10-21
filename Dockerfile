@@ -1,4 +1,4 @@
-FROM golang:1.24-alpine AS build
+FROM golang:1.24-alpine AS builder
 
 WORKDIR /app
 
@@ -8,12 +8,10 @@ RUN go mod download
 COPY . .
 RUN go build -v -o /usr/local/bin/dependabot_prom_exporter ./...
 
-FROM golang:1.24-alpine AS main
+FROM gcr.io/distroless/static:nonroot
+WORKDIR /
 
-RUN addgroup -S app && adduser -u 1000 -S app -G app
+COPY --from=builder /usr/local/bin/dependabot_prom_exporter /usr/local/bin/dependabot_prom_exporter
+USER 65532:65532
 
-USER app
-
-COPY --chown=app:app --from=build /usr/local/bin/dependabot_prom_exporter /usr/local/bin/dependabot_prom_exporter
-
-CMD ["dependabot_prom_exporter"]
+ENTRYPOINT ["dependabot_prom_exporter"]
