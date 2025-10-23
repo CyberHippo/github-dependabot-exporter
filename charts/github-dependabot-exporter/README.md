@@ -26,7 +26,7 @@ You must provide the required [environment variables](../../README.md#configure)
 ```yaml
 env:
   GITHUB_ORG: "my-org"
-  GITHUB_AUTH_MODE: "token"
+  GITHUB_AUTH_MODE: "pat"
   GITHUB_TOKEN: "<your-token>"
 ```
 
