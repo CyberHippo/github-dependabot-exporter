@@ -38,6 +38,7 @@ Set the following environment variables:
 
 - `LOG_LEVEL`: (Opt.) The log level, defaults to `info`.
 - `LISTEN_PORT`: (Opt.) The port on which the exporter will expose its metrics, defaults to `9090`.
+- `CRON_SCHEDULE`: (Opt.) The schedule for running the exporter using standard CRON syntax (e.g., `"0 * * * *"` for every hour).
 - `GITHUB_ORG`: The name of your GitHub organization.
 
 #### For Personal Access Token
