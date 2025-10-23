@@ -3,12 +3,9 @@ package main
 import (
 	"context"
 	"crypto/rsa"
-	"encoding/json"
 	"encoding/pem"
 	"errors"
 	"fmt"
-	log "github.com/sirupsen/logrus"
-	"io"
 	"io/ioutil"
 	"net/http"
 	"os"
@@ -17,9 +14,12 @@ import (
 	"time"
 
 	"github.com/dgrijalva/jwt-go"
+	"github.com/google/go-github/v57/github"
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/robfig/cron/v3"
+	log "github.com/sirupsen/logrus"
+	"golang.org/x/oauth2"
 )
 
 var (
@@ -28,27 +28,15 @@ var (
 			Name: "github_dependabot_alerts",
 			Help: "Number of open Dependabot alerts per repository, severity, and state",
 		},
-    []string{"repo", "severity", "state"},
+		[]string{"repo", "severity", "state"},
 	)
 )
-
-type Repo struct {
-	Name string `json:"name"`
-}
-
-type DependabotAlert struct {
-	State string `json:"state"`
-	SecurityAdvisory  struct {
-		Severity string `json:"severity"`
-	} `json:"security_advisory"`
-}
 
 const (
 	AuthPAT       = "pat"
 	AuthGitHubApp = "app"
 )
 
-// --- GitHub App Auth ---
 func getAppJWT(appID int64, privateKey *rsa.PrivateKey) (string, error) {
 	now := time.Now()
 	claims := jwt.StandardClaims{
@@ -82,127 +70,109 @@ func getInstallationToken(appID, installationID int64, privateKeyPath string) (s
 		return "", err
 	}
 
-	url := fmt.Sprintf("https://api.github.com/app/installations/%d/access_tokens", installationID)
-	req, _ := http.NewRequest("POST", url, nil)
-	req.Header.Add("Authorization", "Bearer "+jwtToken)
-	req.Header.Add("Accept", "application/vnd.github+json")
+	// Create a GitHub client with JWT token for app authentication
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: jwtToken})
+	tc := oauth2.NewClient(context.Background(), ts)
+	client := github.NewClient(tc)
 
-	client := &http.Client{}
-	resp, err := client.Do(req)
+	// Get installation access token
+	token, _, err := client.Apps.CreateInstallationToken(context.Background(), installationID, &github.InstallationTokenOptions{})
 	if err != nil {
-		return "", err
+		return "", fmt.Errorf("failed to get installation token: %v", err)
 	}
-	defer resp.Body.Close()
-	if resp.StatusCode != 201 {
-		body, _ := io.ReadAll(resp.Body)
-		return "", fmt.Errorf("failed to get installation token: %s", string(body))
-	}
-	var result struct {
-		Token string `json:"token"`
-	}
-	if err := json.NewDecoder(resp.Body).Decode(&result); err != nil {
-		return "", err
-	}
-	return result.Token, nil
+
+	return token.GetToken(), nil
 }
 
-func fetchAllRepos(ctx context.Context, httpClient *http.Client, org, token string) ([]Repo, error) {
-	var allRepos []Repo
-	page := 1
+func fetchAllRepos(ctx context.Context, client *github.Client, org string) ([]*github.Repository, error) {
+	var allRepos []*github.Repository
+
+	opt := &github.RepositoryListByOrgOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
+	}
+
 	for {
-		url := fmt.Sprintf("https://api.github.com/orgs/%s/repos?per_page=100&page=%d", org, page)
-		req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-		req.Header.Set("Accept", "application/vnd.github+json")
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-		resp, err := httpClient.Do(req)
+		repos, resp, err := client.Repositories.ListByOrg(ctx, org, opt)
 		if err != nil {
+			log.Errorf("failed to fetch repos: %v", err)
 			return nil, err
 		}
-		defer resp.Body.Close()
-		if resp.StatusCode != 200 {
-			body, _ := io.ReadAll(resp.Body)
-			return nil, fmt.Errorf("failed to fetch repos: %s", string(body))
-		}
-		var repos []Repo
-		if err := json.NewDecoder(resp.Body).Decode(&repos); err != nil {
-			return nil, err
-		}
-		if len(repos) == 0 {
+
+		allRepos = append(allRepos, repos...)
+
+		if resp.NextPage == 0 {
 			break
 		}
-		allRepos = append(allRepos, repos...)
-		page++
+		opt.Page = resp.NextPage
 	}
+
 	return allRepos, nil
 }
 
-func fetchDependabotAlertsForRepo(ctx context.Context, httpClient *http.Client, org, repo, token string) ([]DependabotAlert, error) {
-	log.Debugf("Fetching alerts for repo %s in org %s", repo, org)
-	var allAlerts []DependabotAlert
-	page := 1
-	for {
-		url := fmt.Sprintf("https://api.github.com/repos/%s/%s/dependabot/alerts?per_page=100&page=%d", org, repo, page)
-		req, _ := http.NewRequestWithContext(ctx, "GET", url, nil)
-		req.Header.Set("Accept", "application/vnd.github+json")
-		if token != "" {
-			req.Header.Set("Authorization", "Bearer "+token)
-		}
-		resp, err := httpClient.Do(req)
-		if err != nil {
-			return nil, err
-		}
-		defer resp.Body.Close()
-		if resp.StatusCode == 404 {
-			// Repo probably doesn't have dependabot enabled
-			break
-		}
-		if resp.StatusCode != 200 {
-			body, _ := io.ReadAll(resp.Body)
-			return nil, fmt.Errorf("Failed to fetch dependabot alerts for %s: %s", repo, string(body))
-		}
-		var alerts []DependabotAlert
-		if err := json.NewDecoder(resp.Body).Decode(&alerts); err != nil {
-			return nil, err
-		}
-		if len(alerts) == 0 {
-			break
-		}
-		allAlerts = append(allAlerts, alerts...)
-		page++
+func fetchDependabotAlertsForRepo(ctx context.Context, client *github.Client, org, repo string) ([]*github.DependabotAlert, error) {
+	log.Debugf("Fetching alerts for %s/%s", org, repo)
+	var allAlerts []*github.DependabotAlert
+
+	opt := &github.ListAlertsOptions{
+		ListOptions: github.ListOptions{PerPage: 100},
 	}
+
+	for {
+		alerts, resp, err := client.Dependabot.ListRepoAlerts(ctx, org, repo, opt)
+		if err != nil {
+			// Check if it's a 404 error (repo doesn't have dependabot enabled)
+			if ghErr, ok := err.(*github.ErrorResponse); ok && ghErr.Response.StatusCode == 404 {
+				log.Debugf("Repository %s/%s doesn't have Dependabot enabled or accessible", org, repo)
+				break
+			}
+			log.Errorf("failed to fetch dependabot alerts for %s/%s: %v", repo, org, err)
+			return nil, err
+		}
+
+		allAlerts = append(allAlerts, alerts...)
+
+		if resp.NextPage == 0 {
+			break
+		}
+		opt.ListOptions.Page = resp.NextPage
+	}
+
 	return allAlerts, nil
 }
 
-func updateMetrics(org string, httpClient *http.Client, token string) {
+func updateMetrics(org string, client *github.Client) {
 	ctx := context.Background()
-	repos, err := fetchAllRepos(ctx, httpClient, org, token)
+	repos, err := fetchAllRepos(ctx, client, org)
 	if err != nil {
 		log.Errorf("Error fetching repos: %v", err)
 		return
 	}
+
 	log.Infof("Found %d repos in org %s", len(repos), org)
+
 	for _, repo := range repos {
-		alerts, err := fetchDependabotAlertsForRepo(ctx, httpClient, org, repo.Name, token)
+		repoName := repo.GetName()
+		alerts, err := fetchDependabotAlertsForRepo(ctx, client, org, repoName)
 		if err != nil {
-			log.Warnf("Error fetching dependabot alerts for %s: %v", repo.Name, err)
+			log.Warnf("Error fetching dependabot alerts for %s: %v", repoName, err)
 			continue
 		}
-    counts := map[string]map[string]int{}
-    for _, alert := range alerts {
-        sev := alert.SecurityAdvisory.Severity
-        state := alert.State
-        if counts[sev] == nil {
-            counts[sev] = map[string]int{}
-        }
-        counts[sev][state]++
-    }
-    for severity, states := range counts {
-        for state, count := range states {
-            alertsGauge.WithLabelValues(repo.Name, severity, state).Set(float64(count))
-        }
-    }
+
+		counts := map[string]map[string]int{}
+		for _, alert := range alerts {
+			sev := alert.SecurityAdvisory.GetSeverity()
+			state := alert.GetState()
+			if counts[sev] == nil {
+				counts[sev] = map[string]int{}
+			}
+			counts[sev][state]++
+		}
+
+		for severity, states := range counts {
+			for state, count := range states {
+				alertsGauge.WithLabelValues(repoName, severity, state).Set(float64(count))
+			}
+		}
 	}
 }
 
@@ -212,6 +182,17 @@ func getenv(key, fallback string) string {
 		return fallback
 	}
 	return value
+}
+
+func createGitHubClient(token string) *github.Client {
+	if token == "" {
+		// Return client without authentication
+		return github.NewClient(nil)
+	}
+
+	ts := oauth2.StaticTokenSource(&oauth2.Token{AccessToken: token})
+	tc := oauth2.NewClient(context.Background(), ts)
+	return github.NewClient(tc)
 }
 
 func main() {
@@ -227,13 +208,14 @@ func main() {
 	}
 	log.SetLevel(level)
 
-  listenPort := getenv("LISTEN_PORT", "8080")
-  org := getenv("GITHUB_ORG", "")
-  authMode := getenv("GITHUB_AUTH_MODE", "")
+	listenPort := getenv("LISTEN_PORT", "8080")
+	org := getenv("GITHUB_ORG", "")
+	authMode := getenv("GITHUB_AUTH_MODE", "")
 	schedule := getenv("CRON_SCHEDULE", "0 0 * * *")
 	log.Infof("Refreshing metrics scheduled at %s", schedule)
+
 	if org == "" || authMode == "" {
-		log.Error("GITHUB_ORG and GITHUB_AUTH_MODE must be set")
+		log.Fatal("GITHUB_ORG and GITHUB_AUTH_MODE must be set")
 	}
 
 	var token string
@@ -253,33 +235,33 @@ func main() {
 		}
 		token, err = getInstallationToken(appID, installationID, privateKeyPath)
 		if err != nil {
-			log.Errorf("GitHub App auth failed: %v", err)
+			log.Fatalf("GitHub App auth failed: %v", err)
 		}
 	default:
-		log.Errorf("Unknown GITHUB_AUTH_MODE: %s", authMode)
+		log.Fatalf("Unknown GITHUB_AUTH_MODE: %s", authMode)
 	}
+
+	// Create GitHub client
+	client := createGitHubClient(token)
 
 	// Register Prometheus metrics
 	prometheus.MustRegister(alertsGauge)
 
-	httpClient := &http.Client{Timeout: 10 * time.Second}
-
 	// Initial fetch
-	go updateMetrics(org, httpClient, token)
+	go updateMetrics(org, client)
 
 	c := cron.New()
 	_, err = c.AddFunc(schedule, func() {
 		log.Info("Refreshing metrics.")
-		updateMetrics(org, httpClient, token)
+		updateMetrics(org, client)
 	})
 	if err != nil {
 		log.Fatalf("Failed to schedule cron: %v", err)
 	}
 	c.Start()
 
-  addr := fmt.Sprintf(":%s", listenPort)
+	addr := fmt.Sprintf(":%s", listenPort)
 	http.Handle("/metrics", promhttp.Handler())
-  log.Infof("Exporter running on :%s/metrics", addr)
-  log.Fatal(http.ListenAndServe(addr, nil))
-
+	log.Infof("Exporter running on %s/metrics", addr)
+	log.Fatal(http.ListenAndServe(addr, nil))
 }
