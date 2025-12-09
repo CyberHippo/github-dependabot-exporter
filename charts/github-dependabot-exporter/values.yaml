@@ -2,6 +2,7 @@ fullnameOverride: ""
 nameOverride: ""
 
 replicaCount: 2
+annotations: {}
 podAnnotations: {}
 
 image:
