@@ -24,3 +24,11 @@ tests:
       - equal:
           path: spec.template.metadata.annotations.annotation/foo-bar
           value: foo-bar
+  - it: should set deployment annotation
+    set:
+      annotations:
+        annotation/foo-bar: "foo-bar"
+    asserts:
+      - equal:
+          path: metadata.annotations.annotation/foo-bar
+          value: foo-bar
