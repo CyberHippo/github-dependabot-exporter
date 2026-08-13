@@ -1,12 +1,12 @@
 # GitHub Dependabot Alerts Exporter Helm Chart
 
-This Helm chart deploys the [GitHub Dependabot Alerts Prometheus Exporter](https://github.com/CyberHippo/github-dependabot-exporter) as a Kubernetes Deployment, exposing metrics for Prometheus.
+This Helm chart deploys the [GitHub Dependabot Alerts Prometheus Exporter](https://github.com/elmy-team/github-dependabot-exporter) as a Kubernetes Deployment, exposing metrics for Prometheus.
 
 ## Configuration
 
 | Parameter                       | Description                                                    | Default                |
 |----------------------------------|----------------------------------------------------------------|------------------------|
-| `image.repository`               | Container image repository                                     | `ghcr.io/cyberhippo/github-dependabot-exporter` |
+| `image.repository`               | Container image repository                                     | `ghcr.io/elmy-team/github-dependabot-exporter` |
 | `image.tag`                      | Image tag                                                      | `latest`               |
 | `image.pullPolicy`               | Image pull policy                                              | `IfNotPresent`         |
 | `replicaCount`                   | Number of replicas                                             | 1                      |
@@ -56,8 +56,8 @@ If you use [Prometheus Operator](https://github.com/prometheus-operator/promethe
 ## Usage
 
 ```sh
-helm repo add cyberhippo https://cyberhippo.github.io/github-dependabot-exporter/
-helm install github-dependabot-exporter cyberhippo/github-dependabot-exporter
+helm repo add elmy-team https://elmy-team.github.io/github-dependabot-exporter/
+helm install github-dependabot-exporter elmy-team/github-dependabot-exporter
 ```
 
 ---

@@ -8,7 +8,7 @@ tests:
     asserts:
       - equal:
           path: spec.template.spec.containers[0].image
-          value: "ghcr.io/cyberhippo/github-dependabot-exporter:mytag"
+          value: "ghcr.io/elmy-team/github-dependabot-exporter:mytag"
   - it: should set environment variable
     set:
       env.GITHUB_ORG: "acme"
