@@ -2,6 +2,16 @@ apiVersion: v1
 entries:
   github-dependabot-exporter:
   - apiVersion: v2
+    appVersion: 1.0.1
+    created: "2026-08-13T11:08:14.815155909Z"
+    description: GitHub Dependabot Alerts Prometheus Exporter
+    digest: 2d33172e6b90e891b7d8a353c5d9009c788f43b93a7ad21981e13ffb5b2aef19
+    name: github-dependabot-exporter
+    type: application
+    urls:
+    - https://github.com/elmy-team/github-dependabot-exporter/releases/download/github-dependabot-exporter-1.2.0/github-dependabot-exporter-1.2.0.tgz
+    version: 1.2.0
+  - apiVersion: v2
     appVersion: 1.0.0
     created: "2025-12-09T09:17:01.887834604Z"
     description: GitHub Dependabot Alerts Prometheus Exporter
@@ -21,4 +31,4 @@ entries:
     urls:
     - https://github.com/CyberHippo/github-dependabot-exporter/releases/download/github-dependabot-exporter-1.0.0/github-dependabot-exporter-1.0.0.tgz
     version: 1.0.0
-generated: "2025-12-09T09:17:01.887842128Z"
+generated: "2026-08-13T11:08:14.815164111Z"
