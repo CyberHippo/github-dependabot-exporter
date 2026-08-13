@@ -1,4 +1,4 @@
-module github.com/cyberhippo/dependabot-prometheus-exporter
+module github.com/elmy-team/dependabot-prometheus-exporter
 
 go 1.24.0
 
